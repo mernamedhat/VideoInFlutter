@@ -19,29 +19,21 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  late CameraController _controller;
+   CameraController? _controller;
   late Future<void> _initializeControllerFuture;
-
+  bool checker=false;
   @override
   void initState() {
-    super.initState();
+   init();
+  super.initState();
     // Obtain a list of available cameras on the device
-    availableCameras().then((cameras) {
-      // Select the first camera from the list
-      _controller = CameraController(
-        cameras[0],
-        ResolutionPreset.medium,
-      );
 
-      // Initialize the camera
-      _initializeControllerFuture = _controller.initialize();
-    });
   }
 
   @override
   void dispose() {
     // Dispose of the controller when the widget is disposed
-    _controller.dispose();
+    _controller!.dispose();
     super.dispose();
   }
 
@@ -51,7 +43,7 @@ class _CameraScreenState extends State<CameraScreen> {
       await _initializeControllerFuture;
 
       // Start recording video
-      await _controller.startVideoRecording();
+      await _controller!.startVideoRecording();
     } catch (e) {
       print(e);
     }
@@ -60,7 +52,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _stopRecording() async {
     try {
       // Stop recording video
-      XFile videoFile = await _controller.stopVideoRecording();
+      XFile videoFile = await _controller!.stopVideoRecording();
 
       // Save video to the gallery
       GallerySaver.saveVideo(videoFile.path);
@@ -71,32 +63,52 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // _initializeControllerFuture = _controller!.initialize();
+
+  return Scaffold(
       appBar: AppBar(
         title: Text('Camera Example'),
       ),
-      body: FutureBuilder<void>(
+      body: checker?FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             // If the Future is complete, display the camera preview
-            return CameraPreview(_controller);
+            return CameraPreview(_controller!);
           } else {
             // Otherwise, display a loading indicator
             return Center(child: CircularProgressIndicator());
           }
         },
-      ),
+      ):Container(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _controller.value.isRecordingVideo
+          _controller!.value.isRecordingVideo
               ? _stopRecording()
               : _startRecording();
         },
-        child: Icon(
-          _controller.value.isRecordingVideo ? Icons.stop : Icons.videocam,
-        ),
+        child:checker? Icon(
+          _controller!.value.isRecordingVideo ? Icons.stop : Icons.videocam,
+        ):Container(),
       ),
     );
+  }
+
+  void init() {
+    availableCameras().then((cameras) async {
+
+      // Select the first camera from the list
+      _controller = await CameraController(
+        cameras[0],
+        ResolutionPreset.medium,
+      );
+
+      // Initialize the camera
+      _initializeControllerFuture = _controller!.initialize();
+      checker=true;
+      setState(() {
+
+      });
+    });
   }
 }
